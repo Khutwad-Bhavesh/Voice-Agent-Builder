@@ -1,0 +1,57 @@
+# Virtual Environment
+venv/
+env/
+.env/
+.venv/
+
+# Environment Variables & Secrets
+.env
+.env.local
+*.env
+.streamlit/secrets.toml
+
+# API Keys (never commit these)
+secrets.toml
+config.secret.*
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+.Python
+
+# Logs
+*.log
+streamlit-run.log
+uvicorn.log
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Distribution / Build
+dist/
+build/
+*.egg-info/
+*.egg
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Audio cache (generated at runtime)
+*.mp3
+audio_cache/
