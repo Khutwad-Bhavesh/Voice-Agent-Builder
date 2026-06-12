@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Send, Volume2, Loader2, Play } from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface AgentConfig {
@@ -23,10 +24,11 @@ interface ChatMessage {
 interface ChatInterfaceProps {
   agentConfig: AgentConfig;
   systemPrompt: string;
+  messages: ChatMessage[];
+  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
 }
 
-export function ChatInterface({ agentConfig, systemPrompt }: ChatInterfaceProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export function ChatInterface({ agentConfig, systemPrompt, messages, setMessages }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [promptExpanded, setPromptExpanded] = useState(false);
@@ -38,8 +40,16 @@ export function ChatInterface({ agentConfig, systemPrompt }: ChatInterfaceProps)
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
+    console.log("ChatInterface mounted");
+    return () => console.log("ChatInterface unmounted");
+  }, []);
+
+  useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const viewport = scrollRef.current.closest('[data-slot="scroll-area-viewport"]');
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
+      }
     }
   }, [messages]);
 
@@ -57,11 +67,11 @@ export function ChatInterface({ agentConfig, systemPrompt }: ChatInterfaceProps)
       const res = await fetch("http://localhost:8000/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_prompt: systemPrompt,
-          messages: messages, // Send history
-          user_message: userMessage.content,
-        }),
+          body: JSON.stringify({
+            system_prompt: systemPrompt,
+            messages: messages,
+            user_message: userMessage.content,
+          }),
       });
 
       if (!res.ok) {
@@ -152,8 +162,8 @@ export function ChatInterface({ agentConfig, systemPrompt }: ChatInterfaceProps)
       </div>
 
       {/* Messages Area */}
-      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-        <div className="space-y-6">
+      <ScrollArea className="flex-1 min-h-0 p-4">
+        <div className="space-y-6" ref={scrollRef}>
           {/* Welcome / System Info */}
           <div className="text-center my-4">
             <span className="inline-block px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-medium">
@@ -180,7 +190,7 @@ export function ChatInterface({ agentConfig, systemPrompt }: ChatInterfaceProps)
             </div>
           </div>
 
-          {messages.map((msg, idx) => (
+          {messages.map((msg: ChatMessage, idx: number) => (
             <div
               key={idx}
               className={cn(
@@ -215,7 +225,7 @@ export function ChatInterface({ agentConfig, systemPrompt }: ChatInterfaceProps)
                       )}
                       {playingId === idx ? "Playing..." : "Play Audio"}
                     </Button>
-                    
+
                     {audioCache[idx] && (
                       <a
                         href={audioCache[idx]}

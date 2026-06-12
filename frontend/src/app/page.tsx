@@ -234,35 +234,44 @@ export default function Home() {
             viewport={{ once: true, margin: "-60px" }}
             className="grid grid-cols-1 md:grid-cols-3 gap-5"
           >
-            {presets.map((p, i) => (
-              <motion.div
-                key={p.name}
-                custom={i}
-                variants={fadeUp}
-                className="group rounded-2xl border border-white/[0.06] bg-white/[0.02] p-7 transition-all duration-300 hover:border-indigo-500/30 hover:bg-white/[0.04] cursor-pointer"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white/90">
-                    {p.name}
-                  </h3>
-                  <ChevronRight className="h-4 w-4 text-white/20 transition-transform group-hover:translate-x-1 group-hover:text-indigo-400" />
-                </div>
-                <p className="text-sm text-white/40 leading-relaxed mb-5 font-light">
-                  {p.desc}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <span className="inline-flex items-center rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-300">
-                    {p.agent}
-                  </span>
-                  <span className="inline-flex items-center rounded-full bg-white/[0.05] px-3 py-1 text-xs font-medium text-white/50">
-                    {p.lang}
-                  </span>
-                  <span className="inline-flex items-center rounded-full bg-white/[0.05] px-3 py-1 text-xs font-medium text-white/50">
-                    {p.tone}
-                  </span>
-                </div>
-              </motion.div>
-            ))}
+            {presets.map((p, i) => {
+              const params = new URLSearchParams({
+                name: p.agent,
+                role: p.desc,
+                lang: p.lang,
+                tone: p.tone,
+              });
+              return (
+                <motion.a
+                  key={p.name}
+                  href={`/builder?${params.toString()}`}
+                  custom={i}
+                  variants={fadeUp}
+                  className="group rounded-2xl border border-white/[0.06] bg-white/[0.02] p-7 transition-all duration-300 hover:border-indigo-500/30 hover:bg-white/[0.04] cursor-pointer block"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-white/90">
+                      {p.name}
+                    </h3>
+                    <ChevronRight className="h-4 w-4 text-white/20 transition-transform group-hover:translate-x-1 group-hover:text-indigo-400" />
+                  </div>
+                  <p className="text-sm text-white/40 leading-relaxed mb-5 font-light">
+                    {p.desc}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="inline-flex items-center rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-300">
+                      {p.agent}
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-white/[0.05] px-3 py-1 text-xs font-medium text-white/50">
+                      {p.lang}
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-white/[0.05] px-3 py-1 text-xs font-medium text-white/50">
+                      {p.tone}
+                    </span>
+                  </div>
+                </motion.a>
+              );
+            })}
           </motion.div>
         </div>
       </section>

@@ -1,11 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AgentBuilder } from "@/components/AgentBuilder";
 import { ChatInterface } from "@/components/ChatInterface";
 import { Card } from "@/components/ui/card";
 
+interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 export default function BuilderPage() {
+  const searchParams = useSearchParams();
   const [agentReady, setAgentReady] = useState(false);
   const [agentConfig, setAgentConfig] = useState({
     name: "",
@@ -13,6 +20,12 @@ export default function BuilderPage() {
     tone: "Professional",
   });
   const [systemPrompt, setSystemPrompt] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+
+  const initialName = searchParams.get("name") || "";
+  const initialRole = searchParams.get("role") || "";
+  const initialLang = searchParams.get("lang") || "Hinglish";
+  const initialTone = searchParams.get("tone") || "Professional";
 
   return (
     <main className="min-h-screen bg-[#030303] text-white flex flex-col items-center py-10 px-4 sm:px-6 md:py-20 relative overflow-hidden">
@@ -33,10 +46,15 @@ export default function BuilderPage() {
           {/* Left Column: Form */}
           <div className="lg:col-span-5 w-full">
             <AgentBuilder
+              initialName={initialName}
+              initialRole={initialRole}
+              initialLang={initialLang}
+              initialTone={initialTone}
               onAgentReady={(config, prompt) => {
                 setAgentConfig(config);
                 setSystemPrompt(prompt);
                 setAgentReady(true);
+                setMessages([]); // reset chat only when new agent is built
               }}
             />
           </div>
@@ -47,6 +65,8 @@ export default function BuilderPage() {
               <ChatInterface
                 agentConfig={agentConfig}
                 systemPrompt={systemPrompt}
+                messages={messages}
+                setMessages={setMessages}
               />
             ) : (
               <Card className="flex-1 flex flex-col items-center justify-center bg-white/[0.02] border-white/[0.06] backdrop-blur-sm text-center p-8">

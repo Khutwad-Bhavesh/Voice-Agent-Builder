@@ -22,17 +22,21 @@ interface AgentConfig {
 }
 
 interface AgentBuilderProps {
+  initialName?: string;
+  initialRole?: string;
+  initialLang?: string;
+  initialTone?: string;
   onAgentReady: (config: AgentConfig, systemPrompt: string) => void;
 }
 
 const LANGUAGES = ["Hinglish", "Hindi", "English", "Marathi", "Tamil"];
 const TONES = ["Professional", "Friendly", "Casual"];
 
-export function AgentBuilder({ onAgentReady }: AgentBuilderProps) {
-  const [name, setName] = useState("");
-  const [role, setRole] = useState("");
-  const [language, setLanguage] = useState("Hinglish");
-  const [tone, setTone] = useState("Professional");
+export function AgentBuilder({ initialName, initialRole, initialLang, initialTone, onAgentReady }: AgentBuilderProps) {
+  const [name, setName] = useState(initialName || "");
+  const [role, setRole] = useState(initialRole || "");
+  const [language, setLanguage] = useState(initialLang || "Hinglish");
+  const [tone, setTone] = useState(initialTone || "Professional");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
