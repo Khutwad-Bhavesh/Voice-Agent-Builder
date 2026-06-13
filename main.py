@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException, Header, Query, UploadFile, File
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from groq import Groq
@@ -25,6 +27,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app, max_upload_size: int):
+        super().__init__(app)
+        self.max_upload_size = max_upload_size
+
+    async def dispatch(self, request: Request, call_next):
+        content_length = request.headers.get("content-length")
+        if content_length and int(content_length) > self.max_upload_size:
+            return JSONResponse(status_code=413, content={"detail": "Payload Too Large. DoS protection active."})
+        return await call_next(request)
+
+# 2MB global size limit
+app.add_middleware(RequestSizeLimitMiddleware, max_upload_size=2_000_000)
 
 # --- Pydantic schemas ---
 
@@ -33,7 +48,6 @@ class PromptGenRequest(BaseModel):
     role: str = Field(..., max_length=1000, description="Agent role/purpose")
     language: str = Field(..., description="Target language")
     tone: str = Field(..., description="Tone")
-    groq_api_key: Optional[str] = Field(None, description="Deprecated optional API key")
 
 
 class ChatMessage(BaseModel):
@@ -45,7 +59,6 @@ class ChatRequest(BaseModel):
     system_prompt: str = Field(..., description="System prompt defining agent persona")
     messages: List[ChatMessage] = Field(default=[], description="Previous conversation history")
     user_message: str = Field(..., max_length=1000, description="New message from the user")
-    groq_api_key: Optional[str] = Field(None, description="Deprecated optional API key")
 
 
 class TTSRequest(BaseModel):
@@ -71,27 +84,26 @@ def normalize_provider(provider: Optional[str]) -> str:
 
 def provider_env_key(provider: str) -> Optional[str]:
     """Finds the best backend environment key for the active provider."""
-    if provider == "openrouter":
-        return os.getenv("OPENROUTER_API_KEY") or os.getenv("LLM_API_KEY")
-    if provider == "openai":
-        return os.getenv("OPENAI_API_KEY") or os.getenv("LLM_API_KEY")
-    if provider == "groq":
-        return os.getenv("GROQ_API_KEY") or os.getenv("LLM_API_KEY")
+    key_map = {
+        "openrouter": "OPENROUTER_API_KEY",
+        "openai": "OPENAI_API_KEY",
+        "groq": "GROQ_API_KEY"
+    }
+    primary_env = key_map.get(provider)
+    if primary_env and os.getenv(primary_env):
+        return os.getenv(primary_env)
     return os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY")
 
 def resolve_api_key(
-    payload_key: Optional[str],
     authorization: Optional[str] = None,
     x_api_key: Optional[str] = None,
     provider: Optional[str] = None,
 ) -> str:
-    """Resolves an LLM API key from env first, with legacy request fallbacks."""
+    """Resolves an LLM API key from env first, with request fallbacks."""
     normalized_provider = normalize_provider(provider or os.getenv("LLM_PROVIDER"))
     env_key = provider_env_key(normalized_provider)
     if env_key:
         return env_key
-    if payload_key:
-        return payload_key
     if x_api_key:
         return x_api_key
     if authorization and authorization.startswith("Bearer "):
@@ -127,13 +139,13 @@ def provider_base_url(provider: str) -> str:
     """Returns an OpenAI-compatible chat-completions base URL."""
     if os.getenv("LLM_BASE_URL"):
         return os.getenv("LLM_BASE_URL", "").rstrip("/")
-    if provider == "openrouter":
-        return "https://openrouter.ai/api/v1"
-    if provider == "openai":
-        return "https://api.openai.com/v1"
-    if provider == "groq":
-        return "https://api.groq.com/openai/v1"
-    return os.getenv("OPENAI_BASE_URL", "").rstrip("/")
+    
+    urls = {
+        "openrouter": "https://openrouter.ai/api/v1",
+        "openai": "https://api.openai.com/v1",
+        "groq": "https://api.groq.com/openai/v1"
+    }
+    return urls.get(provider) or os.getenv("OPENAI_BASE_URL", "").rstrip("/")
 
 
 def provider_model(provider: str, purpose: str) -> Optional[str]:
@@ -235,24 +247,17 @@ def empty_chat_fallback(language: str) -> str:
 
 def synthesize_speech_in_memory(text: str, language: str) -> io.BytesIO:
     """Generates gTTS audio on-the-fly and returns an in-memory buffer."""
-    lang_code = 'en'
-    tld = 'com'
-
-    if language == "Hindi":
-        lang_code = 'hi'
-    elif language == "English":
-        lang_code = 'en'
-        tld = 'co.in'  # Indian accent
-    elif language == "Hinglish":
-        lang_code = 'en'
-        tld = 'co.in'  # Indian-accented English for latinized Hinglish
-    elif language == "Marathi":
-        lang_code = 'mr'
-    elif language == "Tamil":
-        lang_code = 'ta'
+    lang_map = {
+        "Hindi": {"lang": "hi", "tld": "com"},
+        "English": {"lang": "en", "tld": "co.in"},
+        "Hinglish": {"lang": "en", "tld": "co.in"},
+        "Marathi": {"lang": "mr", "tld": "com"},
+        "Tamil": {"lang": "ta", "tld": "com"}
+    }
+    config = lang_map.get(language, {"lang": "en", "tld": "com"})
 
     try:
-        tts = gTTS(text=text, lang=lang_code, tld=tld, slow=False)
+        tts = gTTS(text=text, lang=config["lang"], tld=config["tld"], slow=False)
         fp = io.BytesIO()
         tts.write_to_fp(fp)
         fp.seek(0)
@@ -303,7 +308,7 @@ async def generate_prompt_endpoint(
 ):
     """Generates a system prompt via the configured LLM provider."""
     provider = normalize_provider(os.getenv("LLM_PROVIDER"))
-    api_key = resolve_api_key(req.groq_api_key, authorization, x_api_key, provider)
+    api_key = resolve_api_key(authorization, x_api_key, provider)
 
     lang_instructions = ""
     if req.language == "Hindi":
@@ -367,7 +372,7 @@ async def chat_endpoint(
 ):
     """Executes agent chat and returns LLM response."""
     provider = normalize_provider(os.getenv("LLM_PROVIDER"))
-    api_key = resolve_api_key(req.groq_api_key, authorization, x_api_key, provider)
+    api_key = resolve_api_key(authorization, x_api_key, provider)
 
     # Trim history to last 10 messages to conserve tokens and memory
     history = req.messages[-10:] if len(req.messages) > 10 else req.messages

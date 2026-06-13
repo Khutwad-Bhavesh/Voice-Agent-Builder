@@ -206,7 +206,7 @@ function HeroGeometric({
                             <ArrowRight className="h-4 w-4" />
                         </a>
                         <a
-                            href="http://localhost:8000/docs"
+                            href="/docs"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.04] px-6 py-3 text-sm font-medium text-white/80 transition-all hover:bg-white/[0.08] hover:border-white/[0.2]"

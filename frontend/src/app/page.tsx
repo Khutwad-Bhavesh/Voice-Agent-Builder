@@ -375,7 +375,7 @@ export default function Home() {
               run_project.py
               <br />
               <span className="text-white/30">
-                # Backend on :8000 · Frontend on :8501
+                # Backend on :8000 · Frontend on :3000
               </span>
             </code>
           </div>
@@ -389,7 +389,7 @@ export default function Home() {
               <ArrowRight className="h-4 w-4" />
             </a>
             <a
-              href="http://localhost:8000/docs"
+              href="/docs"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.04] text-white/80 px-8 py-3.5 text-sm font-medium transition-all hover:bg-white/[0.08] hover:border-white/[0.2] cursor-pointer"
@@ -418,7 +418,7 @@ export default function Home() {
           </p>
           <div className="flex items-center gap-5">
             <a
-              href="http://localhost:8000/docs"
+              href="/docs"
               className="text-xs text-white/30 hover:text-white/60 transition-colors cursor-pointer"
             >
               API

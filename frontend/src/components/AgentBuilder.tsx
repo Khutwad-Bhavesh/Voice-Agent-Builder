@@ -50,7 +50,7 @@ export function AgentBuilder({ initialName, initialRole, initialLang, initialTon
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8000/api/generate-prompt", {
+      const res = await fetch("/api/generate-prompt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -69,7 +69,7 @@ export function AgentBuilder({ initialName, initialRole, initialLang, initialTon
       const data = await res.json();
       onAgentReady({ name, language, tone }, data.system_prompt);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to connect to backend on port 8000.");
+      setError(err instanceof Error ? err.message : "Failed to connect to backend.");
     } finally {
       setLoading(false);
     }
