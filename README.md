@@ -87,12 +87,9 @@ export LLM_PROMPT_MODEL="model-for-prompt-generation"
 export LLM_CHAT_MODEL="model-for-agent-chat"
 ```
 
-## Security Demo
+## Built-in Security
 
-A security demonstration script is provided to show prompt injection and DoS protections in action. Ensure the backend is running (`uvicorn main:app --host 0.0.0.0 --port 8000`), export your provider API key in your terminal, and run:
+This project includes built-in safeguards for production deployments:
+- **Prompt Injection Defense:** Uses strict XML tagging (`<user_provided_role>` and `<user_input>`) alongside system instructions to actively block jailbreak attempts and system prompt overrides.
+- **DoS Protection:** A global `RequestSizeLimitMiddleware` in FastAPI limits incoming payloads to 2MB, preventing Denial of Service attacks and oversized text requests across all endpoints.
 
-```bash
-venv/bin/python demo_security.py
-```
-# Voice-Agent-Builder
-# Voice-Agent-Builder

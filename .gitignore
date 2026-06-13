@@ -55,3 +55,7 @@ htmlcov/
 # Audio cache (generated at runtime)
 *.mp3
 audio_cache/
+
+# Agent context files
+AGENTS.md
+CLAUDE.md
